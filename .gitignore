@@ -3,7 +3,7 @@
 /node_modules
 /build
 
-/ERR_PNPM_ENV_UNKNOWN_SUBCOMMAND
+/ERR_PNPM_ENV_UNKNOWN_SUBCOMMAND 
 # Logs
 logs
 *.log
