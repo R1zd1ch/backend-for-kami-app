@@ -38,6 +38,7 @@ model User {
   chatRooms     ChatRoomUser[]
   messages      Message[]
   refreshTokens RefreshToken[]
+  resetTokens   ResetToken[]
 }
 
 model Task {
@@ -191,4 +192,13 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   @@index([token], name: "token_idx")
+}
+
+model ResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

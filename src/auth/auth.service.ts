@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -10,6 +11,8 @@ import { LoginDto } from './dtos/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
+import { MailService } from 'src/services/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +20,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async signup(signupDto: SignupDto) {
@@ -140,6 +144,70 @@ export class AuthService {
     return {
       message: 'Password changed successfully',
     };
+  }
+
+  async forgotPassword(email: string) {
+    //Find User by email
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+
+    if (user) {
+      const resetToken = nanoid(64);
+      const expireDay = new Date();
+      expireDay.setDate(expireDay.getHours() + 1);
+      await this.prisma.resetToken.create({
+        data: {
+          userId: user.id,
+          token: resetToken,
+          expiresAt: expireDay,
+        },
+      });
+      this.mailService.sendPasswordResetEmail(email, resetToken);
+    }
+    return { message: 'If this email exists, you will receive an email' };
+  }
+
+  async resetPassword(resetToken: string, newPassword: string) {
+    const token = await this.prisma.resetToken.findUnique({
+      where: {
+        token: resetToken,
+      },
+    });
+
+    if (!token) {
+      throw new UnauthorizedException('Invalid reset token');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: token.userId,
+      },
+    });
+
+    if (!user) {
+      throw new InternalServerErrorException();
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        password: user.password,
+      },
+    });
+
+    await this.prisma.resetToken.delete({
+      where: {
+        token: resetToken,
+      },
+    });
+
+    return { message: 'Password reset successfully' };
   }
 
   async refreshToken(refreshToken: string) {
