@@ -1,0 +1,6 @@
+[
+  {
+    "name": "Small Components",
+    "components": ["atoms/Button/Button.tsx", "atoms/Card/Card.tsx"]
+  }
+]

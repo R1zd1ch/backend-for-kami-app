@@ -1,0 +1,194 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// prisma/schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  firstName String?
+  lastName  String?
+  email     String   @unique
+  password  String
+  avatarUrl String? // Опционально, если нужен аватар
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  tasks         Task[]
+  moods         Mood[]
+  books         Book[]
+  notes         Note[]
+  plansToWatch  PlanToWatch[]
+  gifts         Gift[]
+  songs         Song[]
+  expenses      Expense[]
+  chatRooms     ChatRoomUser[]
+  messages      Message[]
+  refreshTokens RefreshToken[]
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  subject     String // Предмет (например, "Математика")
+  dueDate     DateTime
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Mood {
+  id        String   @id @default(uuid())
+  date      DateTime @default(now())
+  moodLevel Int // Уровень настроения (например, от 1 до 10)
+  note      String? // Описание настроения
+  createdAt DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Book {
+  id         String   @id @default(uuid())
+  title      String
+  author     String
+  progress   Int // Процент прочитанного (0–100)
+  review     String? // Личный отзыв
+  isFinished Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  category  String? // Категория заметки (например, "Школа" или "Личное")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model PlanToWatch {
+  id          String   @id @default(uuid())
+  type        String
+  title       String
+  description String?
+  genre       String?
+  isWatched   Boolean  @default(false)
+  rating      Int? // Рейтинг (например, от 1 до 5)
+  review      String? // Личный отзыв
+  createdAt   DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Gift {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String? // Категория подарка
+  price       Float? // Примерная стоимость
+  createdAt   DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Song {
+  id         String   @id @default(uuid())
+  title      String
+  artist     String
+  album      String?
+  genre      String?
+  isFavorite Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  amount      Float
+  category    String
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Связи
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model ChatRoom {
+  id        String   @id @default(uuid())
+  name      String? // Опционально, если нужен общий чат
+  isGroup   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  // Связи
+  users    ChatRoomUser[]
+  messages Message[]
+}
+
+model ChatRoomUser {
+  id         String @id @default(uuid())
+  userId     String
+  chatRoomId String
+
+  user     User     @relation(fields: [userId], references: [id])
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  // Связи
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  chatRoomId String
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token], name: "token_idx")
+}
