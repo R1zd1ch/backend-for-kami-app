@@ -12,5 +12,5 @@ export class ChangePasswordDto {
     message:
       'пароль должен содержать минимум одну строчную букву, одну заглавную букву и одну цифру',
   })
-  newPassword: stringg;
+  newPassword: string;
 }
