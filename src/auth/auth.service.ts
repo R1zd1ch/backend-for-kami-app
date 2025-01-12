@@ -78,15 +78,25 @@ export class AuthService {
 
     const tokens = await this.generateToken(user.id);
     return {
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      userId: user.id,
+      tokens: {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        expiresAt: tokens.expiresAt,
+      },
+
+      user,
     };
   }
 
   async generateToken(userId) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
     const accessToken = this.jwtService.sign(
-      { userId },
+      { user },
       {
         expiresIn: this.configService.get('jwt.expiresIn'),
         secret: this.configService.get('jwt.secret'),
@@ -95,11 +105,12 @@ export class AuthService {
 
     const refreshToken = uuidv4();
 
-    await this.storeRefreshToken(refreshToken, userId);
+    const token = await this.storeRefreshToken(refreshToken, userId);
 
     return {
       accessToken,
       refreshToken,
+      expiresAt: token.expiresAt,
     };
   }
 
@@ -223,7 +234,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    //удаление токена после того как мы проверили его и создали новый
     await this.prisma.refreshToken.delete({
       where: {
         token: refreshToken,
@@ -234,17 +244,22 @@ export class AuthService {
   }
 
   async storeRefreshToken(token: string, userId) {
-    await this.prisma.refreshToken.upsert({
+    console.log('refreshed');
+    return await this.prisma.refreshToken.upsert({
       where: {
         userId,
       },
       create: {
         token,
         userId,
-        expiresAt: new Date(new Date().setDate(new Date().getDate() + 3)),
+        // expiresAt: new Date(Date.now() + 10000),
+
+        expiresAt: new Date(new Date().setDate(new Date().getDate() + 7)), // 7days
       },
       update: {
         token,
+        // expiresAt: new Date(Date.now() + 10000),
+        expiresAt: new Date(new Date().setDate(new Date().getDate() + 7)), //7days
       },
     });
   }

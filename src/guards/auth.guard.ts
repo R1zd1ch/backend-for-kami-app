@@ -3,7 +3,7 @@ import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-
+import config from 'src/config/config';
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly JwtService: JwtService) {}
@@ -17,7 +17,9 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      const payload = this.JwtService.verify(token);
+      const payload = this.JwtService.verify(token, {
+        secret: config().jwt.secret,
+      });
       request.userId = payload.userId;
     } catch (e) {
       Logger.error(e.message);

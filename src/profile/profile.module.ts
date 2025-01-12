@@ -1,21 +1,23 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import { ProfileService } from './profile.service';
+import { ProfileController } from './profile.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
+
+// import { AuthModule } from 'src/auth/auth.module';
 import {
   // JwtModule,
   JwtService,
 } from '@nestjs/jwt';
 // import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MailService } from 'src/services/mail.service';
 
 @Module({
   imports: [
     PrismaModule,
-    // ConfigModule,
+    // AuthModule,
     // JwtModule.registerAsync({
     //   imports: [ConfigModule],
     //   useFactory: async (configService: ConfigService) => ({
+    //     global: true,
     //     secret: configService.get<string>('jwt.secret'),
     //     signOptions: {
     //       expiresIn: configService.get<string>('jwt.expiresIn'),
@@ -24,7 +26,7 @@ import { MailService } from 'src/services/mail.service';
     //   inject: [ConfigService],
     // }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, MailService, JwtService],
+  controllers: [ProfileController],
+  providers: [ProfileService, JwtService],
 })
-export class AuthModule {}
+export class ProfileModule {}

@@ -16,11 +16,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
+  id        String  @id @default(uuid())
+  email     String  @unique
+  username  String  @unique
   firstName String?
   lastName  String?
-  email     String   @unique
+  gender    String?
+  partnerId String?
+  bio       String?
+
   password  String
   avatarUrl String? // Опционально, если нужен аватар
   createdAt DateTime @default(now())
@@ -29,6 +33,7 @@ model User {
   // Связи
   tasks         Task[]
   moods         Mood[]
+  moodSummary   MoodSummary[]
   books         Book[]
   notes         Note[]
   plansToWatch  PlanToWatch[]
@@ -37,21 +42,40 @@ model User {
   expenses      Expense[]
   chatRooms     ChatRoomUser[]
   messages      Message[]
+  friendships   Friendship[]   @relation("UserFriendships")
+  friends       Friendship[]   @relation("UserFriends")
   refreshTokens RefreshToken[]
   resetTokens   ResetToken[]
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  status    String // Например, "pending", "accepted", "declined"
+  type      String // Например, "close friend", "family", "partner"
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserFriendships", fields: [userId], references: [id])
+  friend User @relation("UserFriends", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+  @@index([userId], name: "userId_idx")
+  @@index([friendId], name: "friendId_idx")
 }
 
 model Task {
   id          String   @id @default(uuid())
   title       String
   description String?
-  subject     String // Предмет (например, "Математика")
+  importance  String
+  selectDay   String?
+  subject     String
   dueDate     DateTime
   isCompleted Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Связи
   userId String
   user   User   @relation(fields: [userId], references: [id])
 }
@@ -59,13 +83,25 @@ model Task {
 model Mood {
   id        String   @id @default(uuid())
   date      DateTime @default(now())
-  moodLevel Int // Уровень настроения (например, от 1 до 10)
-  note      String? // Описание настроения
+  moodLevel Int
+  note      String?
   createdAt DateTime @default(now())
 
-  // Связи
   userId String
   user   User   @relation(fields: [userId], references: [id])
+}
+
+model MoodSummary {
+  id           String @id @default(uuid())
+  month        Int
+  year         Int
+  averageMonth Float
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, month, year])
 }
 
 model Book {
@@ -86,7 +122,9 @@ model Note {
   id        String   @id @default(uuid())
   title     String
   content   String
-  category  String? // Категория заметки (например, "Школа" или "Личное")
+  category  String?
+  tags      String?
+  isPinned  Boolean
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

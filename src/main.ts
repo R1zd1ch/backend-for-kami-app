@@ -10,6 +10,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-  await app.listen(process.env.PORT ?? 3000);
+
+  app.enableCors({
+    origin: '*', // Разрешить все источники. Вы можете указать конкретные источники, например: ['http://example.com']
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+  await app.listen(process.env.PORT ?? 3500);
 }
 bootstrap();
