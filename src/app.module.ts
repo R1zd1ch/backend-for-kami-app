@@ -16,7 +16,12 @@ import { SidebarStateModule } from './sidebar-state/sidebar-state.module';
 import { NotesModule } from './notes/notes.module';
 import { MoodModule } from './mood/mood.module';
 import { MoodSummaryModule } from './mood-summary/mood-summary.module';
+import { BooksModule } from './books/books.module';
+import { GoogleBooksApiModule } from './google-books-api/google-books-api.module';
+import { GiftsModule } from './gifts/gifts.module';
+import { UploadImageModule } from './upload-image/upload-image.module';
 import configuration from './config/config';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -25,6 +30,7 @@ import configuration from './config/config';
       cache: true,
       load: [configuration],
     }),
+    HttpModule,
     NotificationsModule,
     PrismaModule,
     AuthModule,
@@ -47,6 +53,10 @@ import configuration from './config/config';
     NotesModule,
     MoodModule,
     MoodSummaryModule,
+    BooksModule,
+    GoogleBooksApiModule,
+    GiftsModule,
+    UploadImageModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService, ProfileService],

@@ -48,6 +48,10 @@ export class MoodController {
       parsedEndDate,
     );
   }
+  @Get('recent/:id')
+  findRecentMood(@Param('id') id: string) {
+    return this.moodService.findRecentMood(id);
+  }
 
   @Get('by-current-week/:id')
   findAllMoodsByCurrentWeek(@Param('id') id: string) {
@@ -87,9 +91,29 @@ export class MoodController {
     return this.moodService.findAllMoodsByMonth(id, parsedMonth, parsedYear);
   }
 
+  @Get('by-current-year/:id')
+  findAllMoodsByCurrentYear(@Param('id') id: string) {
+    return this.moodService.findAllMoodsByCurrentYear(id);
+  }
+
+  @Get('by-year/:id/:year')
+  findAllMoodsByYear(@Param('id') id: string, @Param('year') year: number) {
+    return this.moodService.findAllMoodsByYear(id, year);
+  }
+
   @Get(':id/:moodId')
   findOneMood(@Param('id') id: string, @Param('moodId') moodId: string) {
     return this.moodService.findOneMood(id, moodId);
+  }
+
+  @Get('recent-created/:id')
+  findRecentCreatedMood(@Param('id') id: string) {
+    return this.moodService.findRecentCreatedMood(id);
+  }
+
+  @Get('recent-updated/:id')
+  findRecentUpdatedMood(@Param('id') id: string) {
+    return this.moodService.findRecentUpdatedMood(id);
   }
 
   @Put(':id/:moodId')

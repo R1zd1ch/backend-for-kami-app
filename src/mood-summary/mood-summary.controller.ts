@@ -6,6 +6,23 @@ import { MoodSummaryService } from './mood-summary.service';
 export class MoodSummaryController {
   constructor(private readonly moodSummaryService: MoodSummaryService) {}
 
+  @Get('/by-interval/:id/:start/:end/:interval')
+  getMoodAverageByInterval(
+    @Param('id') id: string,
+    @Param('start') start: string,
+    @Param('end') end: string,
+    @Param('interval') interval: 'day' | 'week' | 'month' | 'year',
+  ) {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return this.moodSummaryService.getMoodAverageByInterval(
+      id,
+      startDate,
+      endDate,
+      interval,
+    );
+  }
+
   @Get('/by-day/:id/:start/:end')
   getSummaryByDay(
     @Param('id') id: string,

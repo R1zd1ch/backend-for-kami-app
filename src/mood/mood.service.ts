@@ -23,7 +23,7 @@ export class MoodService {
       },
     });
 
-    const moodDate = new Date(newMood.createdAt);
+    const moodDate = new Date(newMood.date);
     const month = moodDate.getMonth() + 1;
     const year = moodDate.getFullYear();
 
@@ -55,7 +55,7 @@ export class MoodService {
     return await this.prisma.mood.findMany({
       where: {
         userId: id,
-        createdAt: {
+        date: {
           gte: startDate,
           lte: endDate,
         },
@@ -81,7 +81,7 @@ export class MoodService {
     return await this.prisma.mood.findMany({
       where: {
         userId: id,
-        createdAt: {
+        date: {
           gte: startDate,
           lte: endDate,
         },
@@ -105,7 +105,7 @@ export class MoodService {
     return await this.prisma.mood.findMany({
       where: {
         userId: id,
-        createdAt: {
+        date: {
           gte: startDate,
           lte: endDate,
         },
@@ -113,11 +113,17 @@ export class MoodService {
     });
   }
 
+  async findAllMoodsByCurrentYear(id: string) {
+    const today = new Date();
+
+    return await this.findAllMoodsByYear(id, today.getFullYear());
+  }
+
   async findAllMoodsByYear(id: string, year: number) {
     return await this.prisma.mood.findMany({
       where: {
         userId: id,
-        createdAt: {
+        date: {
           gte: new Date(year, 0, 1),
           lte: new Date(year, 11, 31),
         },
@@ -134,6 +140,40 @@ export class MoodService {
     });
   }
 
+  async findRecentCreatedMood(id: string) {
+    return await this.prisma.mood.findMany({
+      where: {
+        userId: id,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+    });
+  }
+
+  async findRecentUpdatedMood(id: string) {
+    return await this.prisma.mood.findMany({
+      where: {
+        userId: id,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      take: 10,
+    });
+  }
+
+  async findRecentMood(id: string) {
+    const recentCreated = await this.findRecentCreatedMood(id);
+    const recentUpdated = await this.findRecentUpdatedMood(id);
+
+    return {
+      recentCreated,
+      recentUpdated,
+    };
+  }
+
   async updateMood(id: string, moodId: string, updateMoodDto: UpdateMoodDto) {
     const updatedMood = await this.prisma.mood.update({
       where: {
@@ -145,7 +185,7 @@ export class MoodService {
       },
     });
 
-    const moodDate = new Date(updatedMood.createdAt);
+    const moodDate = new Date(updatedMood.date);
 
     const month = moodDate.getMonth() + 1;
     const year = moodDate.getFullYear();
@@ -174,7 +214,7 @@ export class MoodService {
       },
     });
 
-    const moodDate = new Date(deletedMood.createdAt);
+    const moodDate = new Date(deletedMood.date);
 
     const month = moodDate.getMonth() + 1;
     const year = moodDate.getFullYear();

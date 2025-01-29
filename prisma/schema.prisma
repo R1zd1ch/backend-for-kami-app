@@ -86,6 +86,7 @@ model Mood {
   moodLevel Int
   note      String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt()
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -105,17 +106,33 @@ model MoodSummary {
 }
 
 model Book {
-  id         String   @id @default(uuid())
-  title      String
-  author     String
-  progress   Int // Процент прочитанного (0–100)
-  review     String? // Личный отзыв
-  isFinished Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id          String    @id @unique @default(uuid())
+  status      String    @default("to-read")
+  progress    Int       @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  review      String?
+  rating      Int?
+  isFavourite Boolean?  @default(false)
 
-  // Связи
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  //googleApi
+  externalId    String?  @unique
+  title         String
+  authors       String[]
+  description   String?
+  coverUrl      String?
+  publishedDate String?
+  pages         String?
+  categories    String[]
+  language      String?
+
+  isbn String?
+
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([externalId])
 }
 
 model Note {
@@ -150,12 +167,17 @@ model PlanToWatch {
 }
 
 model Gift {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
   description String?
   category    String? // Категория подарка
   price       Float? // Примерная стоимость
-  createdAt   DateTime @default(now())
+  priority    String?
+  link        String?
+  image       String?
+  isCompleted Boolean?  @default(false)
+  received    DateTime?
+  createdAt   DateTime  @default(now())
 
   // Связи
   userId String
