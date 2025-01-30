@@ -2,7 +2,6 @@ import {
   BadRequestException,
   Controller,
   FileTypeValidator,
-  Logger,
   ParseFilePipe,
   Post,
   UploadedFile,
