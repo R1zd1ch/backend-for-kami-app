@@ -40,12 +40,12 @@ model User {
   gifts         Gift[]
   songs         Song[]
   expenses      Expense[]
-  chatRooms     ChatRoomUser[]
-  messages      Message[]
-  friendships   Friendship[]   @relation("UserFriendships")
-  friends       Friendship[]   @relation("UserFriends")
+  friendships   Friendship[]       @relation("UserFriendships")
+  friends       Friendship[]       @relation("UserFriends")
   refreshTokens RefreshToken[]
   resetTokens   ResetToken[]
+  messages      Message[]
+  chats         ChatParticipants[]
 }
 
 model Friendship {
@@ -211,36 +211,41 @@ model Expense {
   user   User   @relation(fields: [userId], references: [id])
 }
 
-model ChatRoom {
-  id        String   @id @default(uuid())
-  name      String? // Опционально, если нужен общий чат
-  isGroup   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  // Связи
-  users    ChatRoomUser[]
-  messages Message[]
+enum ChatType {
+  group
+  private
 }
 
-model ChatRoomUser {
-  id         String @id @default(uuid())
-  userId     String
-  chatRoomId String
+model Chat {
+  id   String   @id @default(uuid())
+  name String?
+  type ChatType @default(private)
 
-  user     User     @relation(fields: [userId], references: [id])
-  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id])
+  participants ChatParticipants[]
+  messages     Message[]
+  createdAt    DateTime           @default(now())
+}
+
+model ChatParticipants {
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  chatId String
+
+  joinedAt DateTime @default(now())
+
+  @@id([userId, chatId])
 }
 
 model Message {
   id        String   @id @default(uuid())
   content   String
+  sender    User     @relation(fields: [senderId], references: [id])
+  senderId  String
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  chatId    String
   createdAt DateTime @default(now())
-
-  // Связи
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  chatRoomId String
-  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
 }
 
 model RefreshToken {
