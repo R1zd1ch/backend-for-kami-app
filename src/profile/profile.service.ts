@@ -114,4 +114,10 @@ export class ProfileService {
 
     return 'Partner removed';
   }
+
+  async getAllUsers() {
+    const users = await this.prisma.user.findMany({});
+    console.log('users', users);
+    return users;
+  }
 }

@@ -14,9 +14,25 @@ export class ChatService {
           where: {
             type: 'private',
             participants: {
-              some: {
+              every: {
                 userId: {
                   in: [userId1, userId2],
+                },
+              },
+            },
+          },
+          include: {
+            participants: {
+              include: { user: true },
+            },
+            messages: {
+              take: 1,
+              orderBy: { createdAt: 'desc' },
+              include: {
+                sender: {
+                  select: {
+                    username: true,
+                  },
                 },
               },
             },
@@ -42,6 +58,22 @@ export class ChatService {
           create: [{ userId: userId1 }, { userId: userId2 }],
         },
       },
+      include: {
+        participants: {
+          include: { user: true },
+        },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            sender: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
@@ -52,7 +84,6 @@ export class ChatService {
   ) {
     const existingChat = await this.prisma.chat.findFirst({
       where: {
-        type: 'group',
         name,
       },
     });
@@ -75,8 +106,17 @@ export class ChatService {
       },
       include: {
         participants: {
+          include: { user: true },
+        },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
           include: {
-            user: true,
+            sender: {
+              select: {
+                username: true,
+              },
+            },
           },
         },
       },
@@ -89,6 +129,15 @@ export class ChatService {
         senderId,
         chatId,
         content,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }
@@ -105,12 +154,20 @@ export class ChatService {
         messages: {
           take: 1,
           orderBy: { createdAt: 'desc' },
+          include: {
+            sender: {
+              select: {
+                username: true,
+              },
+            },
+          },
         },
       },
     });
   }
 
   async addParticipants(chatId: string, adderId: string, userIds: string[]) {
+    console.log('bebraNewPart', chatId, adderId, userIds);
     const chat = await this.prisma.chat.findUnique({
       where: {
         id: chatId,
@@ -136,6 +193,22 @@ export class ChatService {
       where: {
         id: chatId,
       },
+      include: {
+        participants: {
+          include: { user: true },
+        },
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            sender: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        },
+      },
       data: {
         participants: {
           createMany: {
@@ -146,5 +219,59 @@ export class ChatService {
         },
       },
     });
+  }
+
+  async getMessages(
+    chatId: string,
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
+    const isParticipant = await this.prisma.chatParticipants.findFirst({
+      where: {
+        chatId,
+        userId,
+      },
+    });
+
+    if (!isParticipant) {
+      throw new Error('Нет доступа к чату');
+    }
+
+    const [messages, total] = await this.prisma.$transaction([
+      this.prisma.message.findMany({
+        where: {
+          chatId,
+        },
+        take: limit,
+        skip: (page - 1) * limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      }),
+      this.prisma.message.count({
+        where: {
+          chatId,
+        },
+      }),
+    ]);
+
+    return {
+      data: messages.reverse(),
+      meta: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+      },
+    };
   }
 }

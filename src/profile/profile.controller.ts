@@ -17,10 +17,9 @@ import { AuthGuard } from 'src/guards/auth.guard';
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
-  @Get()
-  findAll() {
-    // return this.profileService.findAll();
-    return 'This action returns all profile';
+  @Get('all-users')
+  getAllUsers() {
+    return this.profileService.getAllUsers();
   }
 
   @Get(':id')

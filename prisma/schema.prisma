@@ -46,6 +46,7 @@ model User {
   resetTokens   ResetToken[]
   messages      Message[]
   chats         ChatParticipants[]
+  SeenMessage   SeenMessage[]
 }
 
 model Friendship {
@@ -239,13 +240,30 @@ model ChatParticipants {
 }
 
 model Message {
-  id        String   @id @default(uuid())
+  id        String        @id @unique @default(uuid())
   content   String
-  sender    User     @relation(fields: [senderId], references: [id])
+  sender    User          @relation(fields: [senderId], references: [id])
   senderId  String
-  chat      Chat     @relation(fields: [chatId], references: [id])
+  chat      Chat          @relation(fields: [chatId], references: [id])
   chatId    String
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
+  seenBy    SeenMessage[]
+
+  @@index([chatId])
+  @@index([senderId])
+}
+
+model SeenMessage {
+  user      User     @relation(fields: [userId], references: [id])
+  message   Message  @relation(fields: [messageId], references: [id])
+  userId    String
+  messageId String
+  seenAt    DateTime @default(now())
+
+  @@unique([userId, messageId])
+  @@index([messageId])
+  @@index([userId])
+  @@index([seenAt])
 }
 
 model RefreshToken {

@@ -8,8 +8,9 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Logger } from '@nestjs/common';
 
-@WebSocketGateway(3005, {})
+@WebSocketGateway(3005, { cors: { origin: '*' } })
 export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
@@ -17,22 +18,31 @@ export class ChatGateway {
   ) {}
 
   @WebSocketServer() server: Server;
+  private logger: Logger = new Logger('ChatGateway');
 
   handleConnection(client: Socket) {
     const userId = client.handshake.headers.userid as string;
+    this.logger.log(`Client connected: ${userId}`);
+    client.join(`user-${userId}`);
     this.chatService.getUserChats(userId).then((chats) => {
-      console.log(userId);
       chats.forEach((chat) => {
         client.join(`chat-${chat.id}`);
+
         console.log(chat);
       });
     });
+  }
+
+  handleDisconnect(client: Socket) {
+    const userId = client.handshake.headers.userid as string;
+    this.logger.log(`Client disconnected: ${userId}`);
   }
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @MessageBody() data: { chatId: string; content: string; userId: string },
   ) {
+    console.log('data', data);
     const chat = await this.prisma.chat.findUnique({
       where: {
         id: data.chatId,
@@ -84,6 +94,8 @@ export class ChatGateway {
       data.userIds,
     );
 
+    this.server.to(`chat-${data.chatId}`).emit('groupUpdated', chat);
+    console.log('groupUpdated', chat);
     data.userIds.forEach((userId) => {
       this.server.to(`user-${userId}`).emit('addedToGroup', chat);
     });
@@ -91,5 +103,56 @@ export class ChatGateway {
     this.server
       .in(data.userIds.map((id) => `user-${id}`))
       .socketsJoin(`chat-${data.chatId}`);
+  }
+
+  @SubscribeMessage('createPrivateChat')
+  async handleCreatePrivateChat(
+    @MessageBody() data: { userId1: string; userId2: string },
+  ) {
+    console.log('privateChat', data);
+    try {
+      const chat = await this.chatService.createPrivateChat(
+        data.userId1,
+        data.userId2,
+      );
+      console.log('NewChat', chat);
+
+      this.server.to(`user-${data.userId1}`).emit('chatCreated', chat);
+      this.server.to(`user-${data.userId2}`).emit('chatCreated', chat);
+      return chat;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  @SubscribeMessage('createGroupChat')
+  async handleCreateGroupChat(
+    @MessageBody()
+    data: {
+      userId: string;
+      chatName: string;
+      userIds: string[];
+    },
+  ) {
+    try {
+      console.log(data);
+      const uniqueUserIds = [...new Set([data.userId, ...data.userIds])];
+      const chat = await this.chatService.createGroupChat(
+        data.userId,
+        data.chatName,
+        data.userIds,
+      );
+
+      this.server
+        .to(uniqueUserIds.map((id) => `user-${id}`))
+        .emit('chatCreated', chat);
+
+      uniqueUserIds.forEach((userId) => {
+        this.server.to(`user-${userId}`).emit('chatCreated', chat);
+      });
+      return chat;
+    } catch (error) {
+      console.log(error);
+    }
   }
 }

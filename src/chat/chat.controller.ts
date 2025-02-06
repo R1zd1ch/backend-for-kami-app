@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 
 @Controller('chat')
@@ -16,6 +27,21 @@ export class ChatController {
     @Param('userId2') userId2: string,
   ) {
     return this.chatService.createPrivateChat(userId1, userId2);
+  }
+
+  @Get('messages/:chatId/:userId')
+  async getMessages(
+    @Param('chatId') chatId: string,
+    @Param('userId') userId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    try {
+      return await this.chatService.getMessages(chatId, userId, page, limit);
+    } catch (error) {
+      console.error(error);
+      throw new HttpException(error.message, HttpStatus.FORBIDDEN);
+    }
   }
 
   @Post('messages/:chatId/userId')
