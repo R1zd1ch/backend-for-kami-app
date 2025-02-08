@@ -155,4 +155,35 @@ export class ChatGateway {
       console.log(error);
     }
   }
+
+  @SubscribeMessage('markAsSeen')
+  async handleMarkAsSeen(
+    @MessageBody()
+    data: {
+      chatId: string;
+      userId: string;
+      messageIds: string[];
+    },
+  ) {
+    try {
+      const result = await this.chatService.markMessagesAsSeen(
+        data.chatId,
+        data.userId,
+        data.messageIds,
+      );
+
+      this.logger.log(
+        `Пользователь ${data.userId} просмотрел ${result.updated} сообщений в чате ${data.chatId}`,
+      );
+
+      this.server.to(`chat-${data.chatId}`).emit('messagesSeen', {
+        chatId: data.chatId,
+        userId: data.userId,
+        records: result.records,
+      });
+    } catch (error) {
+      this.logger.error('Ошибка при отметке сообщений как прочитанных', error);
+      this.server.to(`chat-${data.chatId}`).emit('error', error);
+    }
+  }
 }

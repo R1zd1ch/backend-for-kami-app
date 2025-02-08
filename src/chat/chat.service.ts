@@ -138,12 +138,40 @@ export class ChatService {
             avatarUrl: true,
           },
         },
+        seenBy: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatarUrl: true,
+              },
+            },
+            seenAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getUnreadMessagesCount(chatId: string, userId: string) {
+    return this.prisma.message.count({
+      where: {
+        chatId,
+        seenBy: {
+          none: {
+            userId,
+          },
+        },
+        senderId: {
+          not: userId,
+        },
       },
     });
   }
 
   async getUserChats(userId: string) {
-    return this.prisma.chat.findMany({
+    const chats = this.prisma.chat.findMany({
       where: {
         participants: { some: { userId } },
       },
@@ -164,6 +192,18 @@ export class ChatService {
         },
       },
     });
+
+    const chatsWithUnreadMessages = await Promise.all(
+      (await chats).map(async (chat) => {
+        const unreadMessagesCount = await this.getUnreadMessagesCount(
+          chat.id,
+          userId,
+        );
+        return { ...chat, unreadMessagesCount };
+      }),
+    );
+
+    return chatsWithUnreadMessages;
   }
 
   async addParticipants(chatId: string, adderId: string, userIds: string[]) {
@@ -256,6 +296,18 @@ export class ChatService {
               avatarUrl: true,
             },
           },
+          seenBy: {
+            select: {
+              user: {
+                select: {
+                  id: true,
+                  username: true,
+                  avatarUrl: true,
+                },
+              },
+              seenAt: true,
+            },
+          },
         },
       }),
       this.prisma.message.count({
@@ -272,6 +324,63 @@ export class ChatService {
         totalPages: Math.ceil(total / limit),
         totalItems: total,
       },
+    };
+  }
+
+  async markMessagesAsSeen(
+    chatId: string,
+    userId: string,
+    messageIds: string[],
+  ) {
+    const unseenMessages = await this.prisma.message.findMany({
+      where: {
+        chatId,
+        id: {
+          in: messageIds,
+        },
+        seenBy: {
+          none: {
+            userId,
+          },
+        },
+      },
+    });
+
+    if (!unseenMessages.length) {
+      return { updated: 0 };
+    }
+
+    const seenRecord = unseenMessages.map((m) => ({
+      userId,
+      messageId: m.id,
+    }));
+
+    await this.prisma.seenMessage.createMany({
+      data: seenRecord,
+      skipDuplicates: true,
+    });
+
+    const updatedRecords = await this.prisma.seenMessage.findMany({
+      where: {
+        messageId: {
+          in: messageIds,
+        },
+        userId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            avatarUrl: true,
+          },
+        },
+      },
+    });
+
+    return {
+      updated: unseenMessages.length,
+      records: updatedRecords,
     };
   }
 }
